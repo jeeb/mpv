@@ -371,10 +371,10 @@ If you really mean to compile without libass support use --disable-libass."
 ]
 
 libav_pkg_config_checks = [
-    'libavutil',   '>= 52.48.101',
-    'libavcodec',  '>= 55.34.1',
-    'libavformat', '>= 55.12.0',
-    'libswscale',  '>= 2.1.2'
+    'libavutil-mpv',   '>= 52.48.101',
+    'libavcodec-mpv',  '>= 55.34.1',
+    'libavformat-mpv', '>= 55.12.0',
+    'libswscale-mpv',  '>= 2.1.2'
 ]
 
 libav_dependencies = [
@@ -388,11 +388,11 @@ Libav libraries ({0}). Aborting.".format(" ".join(libav_pkg_config_checks))
     }, {
         'name': '--libswresample',
         'desc': 'libswresample',
-        'func': check_pkg_config('libswresample', '>= 0.17.104'),
+        'func': check_pkg_config('libswresample-mpv', '>= 0.17.104'),
     }, {
         'name': '--libavresample',
         'desc': 'libavresample',
-        'func': check_pkg_config('libavresample',  '>= 1.1.0'),
+        'func': check_pkg_config('libavresample-mpv',  '>= 1.1.0'),
         'deps_neg': ['libswresample'],
     }, {
         'name': 'resampler',
