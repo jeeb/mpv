@@ -20,6 +20,8 @@ BuildRequires: pkgconfig(wayland-client) >= 1.6
 BuildRequires: pkgconfig(wayland-cursor) >= 1.6
 BuildRequires: pkgconfig(xkbcommon) >= 0.3
 BuildRequires: pkgconfig(libpulse)
+BuildRequires: pkgconfig(wayland-egl) >= 9.0.0
+BuildRequires: pkgconfig(egl) >= 9.0.0
 
 Requires: ffmpeg-mpv
 
@@ -34,7 +36,8 @@ cp %{SOURCE1001} .
 ./waf configure \
     --prefix=%{_prefix} \
     --confdir=%{_sysconfdir}/mpv \
-    --disable-manpage-build
+    --disable-manpage-build \
+    --enable-gl-wayland
 ./waf build
 
 %install
