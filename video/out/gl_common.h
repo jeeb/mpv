@@ -45,8 +45,13 @@
 #endif
 #include <OpenGL/glext.h>
 #else
+#ifdef HAVE_GL_GL_H
 #include <GL/gl.h>
 #include <GL/glext.h>
+#else
+#include "GL/gl.h"
+#include "GL/glext.h"
+#endif
 #endif
 
 #define MP_GET_GL_WORKAROUNDS
