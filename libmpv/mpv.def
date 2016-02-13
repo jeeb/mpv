@@ -20,6 +20,7 @@ mpv_get_sub_api
 mpv_get_time_us
 mpv_get_wakeup_pipe
 mpv_initialize
+mpv_initialize_jvm
 mpv_load_config_file
 mpv_observe_property
 mpv_opengl_cb_draw

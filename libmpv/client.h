@@ -1601,6 +1601,8 @@ typedef enum mpv_sub_api {
  */
 void *mpv_get_sub_api(mpv_handle *ctx, mpv_sub_api sub_api);
 
+void mpv_initialize_jvm(mpv_handle *ctx, void *jvm);
+
 #ifdef __cplusplus
 }
 #endif

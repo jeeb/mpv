@@ -19,6 +19,7 @@
 #include <errno.h>
 #include <locale.h>
 #include <assert.h>
+#include <libavutil/jni.h>
 
 #include "common/common.h"
 #include "common/global.h"
@@ -520,6 +521,16 @@ int mpv_initialize(mpv_handle *ctx)
         return MPV_ERROR_NOMEM;
 
     return 0;
+}
+
+void mpv_initialize_jvm(mpv_handle *ctx, void *jvm)
+{
+    if (jvm) {
+        MP_ERR(ctx, "Registering JVM");
+        av_jni_register_java_vm(jvm);
+    } else {
+        MP_ERR(ctx, "Couldn't get the JVM :<");
+    }
 }
 
 // set ev->data to a new copy of the original data
