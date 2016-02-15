@@ -116,7 +116,8 @@ static int init(struct ao *ao)
     pcm.endianness = SL_BYTEORDER_LITTLEENDIAN;
 
     ao->device_buffer = ao->samplerate * BUFFER_SIZE_MS / 1000;
-    p->buffer_size = ao->device_buffer * ao->channels.num * af_fmt_to_bytes(ao->format);
+    p->buffer_size = ao->device_buffer * ao->channels.num *
+        af_fmt_to_bytes(ao->format);
     p->buffer = calloc(1, p->buffer_size);
 
     audio_source.pFormat = (void*)&pcm;
@@ -130,11 +131,14 @@ static int init(struct ao *ao)
 
     SLboolean required[] = { SL_BOOLEAN_TRUE };
     SLInterfaceID iid_array[] = { SL_IID_BUFFERQUEUE };
-    CHK((*p->engine)->CreateAudioPlayer(p->engine, &p->player, &audio_source, &audio_sink, 1, iid_array, required));
+    CHK((*p->engine)->CreateAudioPlayer(p->engine, &p->player, &audio_source,
+        &audio_sink, 1, iid_array, required));
     CHK((*p->player)->Realize(p->player, SL_BOOLEAN_FALSE));
     CHK((*p->player)->GetInterface(p->player, SL_IID_PLAY, (void*)&p->play));
-    CHK((*p->player)->GetInterface(p->player, SL_IID_BUFFERQUEUE, (void*)&p->buffer_queue));
-    CHK((*p->buffer_queue)->RegisterCallback(p->buffer_queue, buffer_callback, ao));
+    CHK((*p->player)->GetInterface(p->player, SL_IID_BUFFERQUEUE,
+        (void*)&p->buffer_queue));
+    CHK((*p->buffer_queue)->RegisterCallback(p->buffer_queue,
+        buffer_callback, ao));
 
     return 1;
 error:
