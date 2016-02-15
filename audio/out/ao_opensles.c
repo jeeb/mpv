@@ -121,6 +121,10 @@ static int init(struct ao *ao)
     p->buffer_size = ao->device_buffer * ao->channels.num *
         af_fmt_to_bytes(ao->format);
     p->buffer = calloc(1, p->buffer_size);
+    if (!p->buffer) {
+        MP_ERR(ao, "Failed to allocate device buffer\n");
+        goto error;
+    }
 
     audio_source.pFormat = (void*)&pcm;
     audio_source.pLocator = (void*)&locator_buffer_queue;
