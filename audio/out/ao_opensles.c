@@ -86,16 +86,6 @@ static int init(struct ao *ao)
     // This AO only supports two channels at the moment
     mp_chmap_from_channels(&ao->channels, 2);
 
-    ao->format = af_fmt_from_planar(ao->format);
-    switch (ao->format) {
-    case AF_FORMAT_FLOAT:
-        ao->format = AF_FORMAT_S16;
-        break;
-    case AF_FORMAT_DOUBLE:
-        ao->format = AF_FORMAT_S32;
-        break;
-    }
-
     CHK(slCreateEngine(&p->sl, 0, NULL, 0, NULL, NULL));
     CHK((*p->sl)->Realize(p->sl, SL_BOOLEAN_FALSE));
     CHK((*p->sl)->GetInterface(p->sl, SL_IID_ENGINE, (void*)&p->engine));
@@ -108,11 +98,20 @@ static int init(struct ao *ao)
     pcm.formatType = SL_DATAFORMAT_PCM;
     pcm.numChannels = 2;
     pcm.samplesPerSec = ao->samplerate * 1000;
-    for (int n = 0; fmtmap[n][0]; ++n) {
-        if (ao->format == fmtmap[n][0]) {
-            pcm.bitsPerSample = fmtmap[n][1];
-            break;
-        }
+
+    int compatible_formats[AF_FORMAT_COUNT];
+    af_get_best_sample_formats(ao->format, compatible_formats);
+    pcm.bitsPerSample = 0;
+    for (int i = 0; compatible_formats[i] && !pcm.bitsPerSample; ++i)
+        for (int j = 0; fmtmap[j][0]; ++j)
+            if (compatible_formats[i] == fmtmap[j][0]) {
+                ao->format = fmtmap[j][0];
+                pcm.bitsPerSample = fmtmap[j][1];
+                break;
+            }
+    if (!pcm.bitsPerSample) {
+        MP_ERR(ao, "Cannot find compatible audio format\n");
+        goto error;
     }
     pcm.containerSize = 8 * af_fmt_to_bytes(ao->format);
     pcm.channelMask = SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_RIGHT;
