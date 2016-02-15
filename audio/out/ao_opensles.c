@@ -50,15 +50,15 @@ static void uninit(struct ao *ao)
 
 static void buffer_callback(SLBufferQueueItf buffer_queue, void *context)
 {
-    int read;
     struct ao *ao = context;
-    struct priv *priv = (struct priv*)ao->priv;
+    struct priv *p = ao->priv;
+    void *data[1] = { p->buffer };
     SLresult res;
-    void *data[1] = { priv->buffer };
 
-    double delay = priv->buffer_size / (double)ao->bps;
-    read = ao_read_data(ao, data, priv->buffer_size / ao->sstride, mp_time_us() + delay);
-    res = (*buffer_queue)->Enqueue(buffer_queue, priv->buffer, ao->sstride * read);
+    double delay = p->buffer_size / (double)ao->bps;
+    ao_read_data(ao, data, p->buffer_size / ao->sstride, mp_time_us() + delay);
+
+    res = (*buffer_queue)->Enqueue(buffer_queue, p->buffer, p->buffer_size);
     if (res != SL_RESULT_SUCCESS)
         MP_ERR(ao, "Failed to Enqueue: %d\n", res);
 }
@@ -162,7 +162,11 @@ static void resume(struct ao *ao)
     struct priv *p = ao->priv;
     set_play_state(ao, SL_PLAYSTATE_PLAYING);
 
-    buffer_callback(p->buffer_queue, ao);
+    // The callback is fired once a buffer finishes playing, since after we set
+    // the playing state the queue is empty, we need to enqueue something
+    // to kick the callback (which lives in a different thread).
+    static char empty = 0;
+    (*p->buffer_queue)->Enqueue(p->buffer_queue, &empty, 1);
 }
 
 const struct ao_driver audio_out_opensles = {
