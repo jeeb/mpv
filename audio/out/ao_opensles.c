@@ -83,6 +83,9 @@ static int init(struct ao *ao)
     SLDataSource audio_source;
     SLDataSink audio_sink;
 
+    // This AO only supports two channels at the moment
+    mp_chmap_from_channels(&ao->channels, 2);
+
     ao->format = af_fmt_from_planar(ao->format);
     switch (ao->format) {
     case AF_FORMAT_FLOAT:
