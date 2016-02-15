@@ -558,8 +558,7 @@ audio_output_features = [
     }, {
         'name': '--opensles',
         'desc': 'OpenSL ES audio output',
-        'func': check_statement('SLES/OpenSLES.h', 'slCreateEngine'),
-        'default': 'disable'
+        'func': check_statement('SLES/OpenSLES.h', 'slCreateEngine', lib="OpenSLES"),
     }, {
         'name': '--alsa',
         'desc': 'ALSA audio output',
