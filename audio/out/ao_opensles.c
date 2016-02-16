@@ -80,7 +80,8 @@ static void buffer_callback(SLBufferQueueItf buffer_queue, void *context)
     SLresult res;
 
     double delay = p->buffer_size / (double)ao->bps;
-    ao_read_data(ao, data, p->buffer_size / ao->sstride, mp_time_us() + delay);
+    ao_read_data(ao, data, p->buffer_size / ao->sstride,
+        mp_time_us() + 1000000LL * delay);
 
     res = (*buffer_queue)->Enqueue(buffer_queue, p->buffer, p->buffer_size);
     if (res != SL_RESULT_SUCCESS)
