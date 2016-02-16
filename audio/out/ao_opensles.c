@@ -2,6 +2,7 @@
 #include "internal.h"
 #include "common/msg.h"
 #include "audio/format.h"
+#include "options/m_option.h"
 #include "osdep/timer.h"
 
 #include <SLES/OpenSLES.h>
@@ -14,6 +15,9 @@ struct priv {
     SLPlayItf play;
     char *buffer;
     size_t buffer_size;
+
+    int cfg_frames_per_buffer;
+    int cfg_sample_rate;
 };
 
 static const int fmtmap[][2] = {
@@ -63,7 +67,7 @@ static void buffer_callback(SLBufferQueueItf buffer_queue, void *context)
         MP_ERR(ao, "Failed to Enqueue: %d\n", res);
 }
 
-#define BUFFER_SIZE_MS 50
+#define DEFAULT_BUFFER_SIZE_MS 50
 
 #define CHK(stmt) \
     { \
@@ -97,7 +101,6 @@ static int init(struct ao *ao)
 
     pcm.formatType = SL_DATAFORMAT_PCM;
     pcm.numChannels = 2;
-    pcm.samplesPerSec = ao->samplerate * 1000;
 
     int compatible_formats[AF_FORMAT_COUNT];
     af_get_best_sample_formats(ao->format, compatible_formats);
@@ -117,7 +120,16 @@ static int init(struct ao *ao)
     pcm.channelMask = SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_RIGHT;
     pcm.endianness = SL_BYTEORDER_LITTLEENDIAN;
 
-    ao->device_buffer = ao->samplerate * BUFFER_SIZE_MS / 1000;
+    if (p->cfg_sample_rate)
+        ao->samplerate = p->cfg_sample_rate;
+
+    // samplesPerSec is misnamed, actually it's samples per ms
+    pcm.samplesPerSec = ao->samplerate * 1000;
+
+    if (p->cfg_frames_per_buffer)
+        ao->device_buffer = p->cfg_frames_per_buffer;
+    else
+        ao->device_buffer = ao->samplerate * DEFAULT_BUFFER_SIZE_MS / 1000;
     p->buffer_size = ao->device_buffer * ao->channels.num *
         af_fmt_to_bytes(ao->format);
     p->buffer = calloc(1, p->buffer_size);
@@ -179,6 +191,8 @@ static void resume(struct ao *ao)
     (*p->buffer_queue)->Enqueue(p->buffer_queue, &empty, 1);
 }
 
+#define OPT_BASE_STRUCT struct priv
+
 const struct ao_driver audio_out_opensles = {
     .description = "OpenSL ES audio output",
     .name      = "opensles",
@@ -188,4 +202,9 @@ const struct ao_driver audio_out_opensles = {
     .resume    = resume,
 
     .priv_size = sizeof(struct priv),
+    .options = (const struct m_option[]) {
+        OPT_INTRANGE("frames-per-buffer", cfg_frames_per_buffer, 0, 1, 10000),
+        OPT_INTRANGE("sample-rate", cfg_sample_rate, 0, 1000, 100000),
+        {0}
+    },
 };
