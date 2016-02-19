@@ -28,13 +28,16 @@
 #include <SLES/OpenSLES.h>
 #include <SLES/OpenSLES_Android.h>
 
+#include <pthread.h>
+
 struct priv {
     SLObjectItf sl, output_mix, player;
     SLBufferQueueItf buffer_queue;
     SLEngineItf engine;
     SLPlayItf play;
-    char *buffer;
+    char *curbuf, *buf1, *buf2;
     size_t buffer_size;
+    pthread_mutex_t buffer_lock;
 
     int cfg_frames_per_buffer;
     int cfg_sample_rate;
@@ -65,8 +68,11 @@ static void uninit(struct ao *ao)
     p->engine = NULL;
     p->play = NULL;
 
-    free(p->buffer);
-    p->buffer = NULL;
+    pthread_mutex_destroy(&p->buffer_lock);
+
+    free(p->buf1);
+    free(p->buf2);
+    p->curbuf = p->buf1 = p->buf2 = NULL;
     p->buffer_size = 0;
 }
 
@@ -76,16 +82,24 @@ static void buffer_callback(SLBufferQueueItf buffer_queue, void *context)
 {
     struct ao *ao = context;
     struct priv *p = ao->priv;
-    void *data[1] = { p->buffer };
     SLresult res;
+    void *data[1];
+    double delay;
 
-    double delay = p->buffer_size / (double)ao->bps;
+    pthread_mutex_lock(&p->buffer_lock);
+
+    data[0] = p->curbuf;
+    delay = 2 * p->buffer_size / (double)ao->bps;
     ao_read_data(ao, data, p->buffer_size / ao->sstride,
         mp_time_us() + 1000000LL * delay);
 
-    res = (*buffer_queue)->Enqueue(buffer_queue, p->buffer, p->buffer_size);
+    res = (*buffer_queue)->Enqueue(buffer_queue, p->curbuf, p->buffer_size);
     if (res != SL_RESULT_SUCCESS)
         MP_ERR(ao, "Failed to Enqueue: %d\n", res);
+    else
+        p->curbuf = (p->curbuf == p->buf1) ? p->buf2 : p->buf1;
+
+    pthread_mutex_unlock(&p->buffer_lock);
 }
 
 #define DEFAULT_BUFFER_SIZE_MS 50
@@ -118,7 +132,7 @@ static int init(struct ao *ao)
     CHK((*p->output_mix)->Realize(p->output_mix, SL_BOOLEAN_FALSE));
 
     locator_buffer_queue.locatorType = SL_DATALOCATOR_BUFFERQUEUE;
-    locator_buffer_queue.numBuffers = 1;
+    locator_buffer_queue.numBuffers = 2;
 
     pcm.formatType = SL_DATAFORMAT_PCM;
     pcm.numChannels = 2;
@@ -153,9 +167,16 @@ static int init(struct ao *ao)
         ao->device_buffer = ao->samplerate * DEFAULT_BUFFER_SIZE_MS / 1000;
     p->buffer_size = ao->device_buffer * ao->channels.num *
         af_fmt_to_bytes(ao->format);
-    p->buffer = calloc(1, p->buffer_size);
-    if (!p->buffer) {
+    p->buf1 = calloc(1, p->buffer_size);
+    p->buf2 = calloc(1, p->buffer_size);
+    p->curbuf = p->buf1;
+    if (!p->buf1 || !p->buf2) {
         MP_ERR(ao, "Failed to allocate device buffer\n");
+        goto error;
+    }
+    int r = pthread_mutex_init(&p->buffer_lock, NULL);
+    if (r) {
+        MP_ERR(ao, "Failed to initialize the mutex: %d\n", r);
         goto error;
     }
 
@@ -205,11 +226,9 @@ static void resume(struct ao *ao)
     struct priv *p = ao->priv;
     set_play_state(ao, SL_PLAYSTATE_PLAYING);
 
-    // The callback is fired once a buffer finishes playing, since after we set
-    // the playing state the queue is empty, we need to enqueue something
-    // to kick the callback (which lives in a different thread).
-    static char empty = 0;
-    (*p->buffer_queue)->Enqueue(p->buffer_queue, &empty, 1);
+    // enqueue two buffers
+    buffer_callback(p->buffer_queue, ao);
+    buffer_callback(p->buffer_queue, ao);
 }
 
 #define OPT_BASE_STRUCT struct priv
