@@ -127,6 +127,7 @@ extern const struct vd_lavc_hwdec mp_vd_lavc_vaapi_copy;
 extern const struct vd_lavc_hwdec mp_vd_lavc_dxva2;
 extern const struct vd_lavc_hwdec mp_vd_lavc_dxva2_copy;
 extern const struct vd_lavc_hwdec mp_vd_lavc_rpi;
+extern const struct vd_lavc_hwdec mp_vd_lavc_mediacodec;
 
 static const struct vd_lavc_hwdec *const hwdec_list[] = {
 #if HAVE_RPI
@@ -146,6 +147,7 @@ static const struct vd_lavc_hwdec *const hwdec_list[] = {
     &mp_vd_lavc_dxva2,
     &mp_vd_lavc_dxva2_copy,
 #endif
+    &mp_vd_lavc_mediacodec,
     NULL
 };
 
