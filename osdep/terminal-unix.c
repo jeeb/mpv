@@ -368,6 +368,14 @@ static void close_death_pipe(void)
     }
 }
 
+static void close_tty(void)
+{
+    if (tty_in >= 0 && tty_in != STDIN_FILENO)
+        close(tty_in);
+
+    tty_in = tty_out = -1;
+}
+
 static void quit_request_sighandler(int signum)
 {
     do_deactivate_getch2();
@@ -432,6 +440,7 @@ void terminal_setup_getch(struct input_ctx *ictx)
     if (pthread_create(&input_thread, NULL, terminal_thread, NULL)) {
         input_ctx = NULL;
         close_death_pipe();
+        close_tty();
         return;
     }
 
@@ -460,6 +469,7 @@ void terminal_uninit(void)
         (void)write(death_pipe[1], &(char){0}, 1);
         pthread_join(input_thread, NULL);
         close_death_pipe();
+        close_tty();
         input_ctx = NULL;
     }
 
