@@ -923,10 +923,18 @@ static int mp_property_disc_title(void *ctx, struct m_property *prop,
         return M_PROPERTY_OK;
     case M_PROPERTY_SET:
         title = *(int*)arg;
-        if (demux_stream_control(d, STREAM_CTRL_SET_CURRENT_TITLE, &title) < 0)
+        if (demux_stream_control(d, STREAM_CTRL_SET_CURRENT_TITLE, &title) < 0) {
+            MP_ERR(mpctx, "Demux stream control returned an error when setting title to %d!\n",
+                   title);
             return M_PROPERTY_NOT_IMPLEMENTED;
-        if (!mpctx->stop_play)
+        }
+        if (!mpctx->stop_play) {
+            MP_ERR(mpctx, "Setting stop_play to PT_CURRENT_ENTRY!\n");
             mpctx->stop_play = PT_CURRENT_ENTRY;
+        }
+
+        MP_INFO(mpctx, "Successfully set title to %d!\n",
+                title);
         return M_PROPERTY_OK;
     }
     return M_PROPERTY_NOT_IMPLEMENTED;
@@ -1221,11 +1229,16 @@ static int mp_property_disc_titles(void *ctx, struct m_property *prop,
 {
     MPContext *mpctx = ctx;
     struct demuxer *demuxer = mpctx->demuxer;
-    unsigned int num_titles;
+    unsigned int num_titles = 0;
     if (!demuxer || !demuxer->extended_ctrls ||
         demux_stream_control(demuxer, STREAM_CTRL_GET_NUM_TITLES,
-                             &num_titles) < 1)
+                             &num_titles) < 1) {
+        MP_ERR(mpctx, "No titles available: demuxer=%p, extended_ctrls=%s, num_titles=%u!\n",
+               demuxer, demuxer ? (demuxer->extended_ctrls ? "true" : "false") : "<not available>",
+               num_titles);
         return M_PROPERTY_UNAVAILABLE;
+    }
+
     return m_property_int_ro(action, arg, num_titles);
 }
 

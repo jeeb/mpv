@@ -200,6 +200,8 @@ static int bluray_stream_control(stream_t *s, int cmd, void *arg)
         if (title >= b->num_titles || !play_title(b, title))
             return STREAM_UNSUPPORTED;
         b->current_title = title;
+        MP_INFO(s, "Successfully set current_title to %"PRIu32"!\n",
+                b->current_title);
         return STREAM_OK;
     }
     case STREAM_CTRL_GET_CURRENT_TITLE: {
@@ -442,6 +444,8 @@ static int bluray_stream_open_internal(stream_t *s)
         }
     }
 
+    MP_INFO(s, "We can has current_title=%d, will be setting it to -1\n",
+            b->current_title);
     // these should be set before any callback
     b->current_angle = -1;
     b->current_title = -1;
@@ -451,12 +455,13 @@ static int bluray_stream_open_internal(stream_t *s)
 
     select_initial_title(s, title_guess);
 
-    s->fill_buffer = bluray_stream_fill_buffer;
-    s->close       = bluray_stream_close;
-    s->control     = bluray_stream_control;
-    s->sector_size = BLURAY_SECTOR_SIZE;
-    s->priv        = b;
-    s->demuxer     = "+disc";
+    s->fill_buffer    = bluray_stream_fill_buffer;
+    s->close          = bluray_stream_close;
+    s->control        = bluray_stream_control;
+    s->sector_size    = BLURAY_SECTOR_SIZE;
+    s->priv           = b;
+    s->demuxer        = "+disc";
+    s->extended_ctrls = true;
 
     MP_VERBOSE(s, "Blu-ray successfully opened.\n");
 
