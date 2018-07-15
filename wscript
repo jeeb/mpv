@@ -983,6 +983,7 @@ def is_debug_build(ctx):
     return getattr(ctx.options, 'enable_debug-build')
 
 def configure(ctx):
+    from waflib import Options
     ctx.resetenv(ctx.options.variant)
     ctx.check_waf_version(mini='1.8.4')
     target = os.environ.get('TARGET')
@@ -1012,6 +1013,13 @@ def configure(ctx):
     ctx.load('detections.compiler')
     ctx.load('detections.devices')
     ctx.load('gnu_dirs')
+
+    # now that we have initialized gnu_dirs, check if
+    # we're cross-compiling. If we are, just use /lib
+    # as the library directory instead of utilizing the
+    # native one that was more or less sniffed by Utils.lib64
+    if target and not getattr(Options.options, 'LIBDIR', None):
+        ctx.env['LIBDIR'] = Utils.subst_vars(os.path.join('${EXEC_PREFIX}', 'lib'), ctx.env)
 
     for ident, _, _ in _INSTALL_DIRS_LIST:
         varname = ident.upper()
