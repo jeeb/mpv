@@ -334,6 +334,8 @@ static bool d3d11_set_fullscreen(struct ra_ctx *ctx)
 {
     struct priv *p = ctx->priv;
     HRESULT hr;
+    BOOL is_fullscreen = 0;
+    IDXGIOutput *le_output = NULL;
 
     m_config_cache_update(p->opts_cache);
 
@@ -359,6 +361,14 @@ static bool d3d11_set_fullscreen(struct ra_ctx *ctx)
 
     if (!resize(ctx))
         return false;
+
+    IDXGISwapChain_GetFullscreenState(p->swapchain,
+                                      &is_fullscreen, &le_output);
+
+    if (!FAILED(hr)) {
+        MP_INFO(ctx, "Das swap chain is now fullscreen: %s\n",
+                is_fullscreen ? "yes" : "no");
+    }
 
     return true;
 }
