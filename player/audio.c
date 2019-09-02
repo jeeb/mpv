@@ -373,7 +373,19 @@ static void reinit_audio_filters_and_output(struct MPContext *mpctx)
         if (out_rate != ao_rate || out_format != ao_format ||
             !mp_chmap_equals(&out_channels, &ao_channels))
         {
-            MP_ERR(mpctx, "Passthrough format unsupported.\n");
+            char out_fmt_tmp[255];
+            char ao_fmt_tmp[255];
+
+            MP_ERR(mpctx, "AO: [%s] Passthrough format unsupported due to "
+                          "output and AO audio configurations mismatching. "
+                          "Output config: %s, AO config: %s\n",
+                   ao_get_name(mpctx->ao),
+                   audio_config_to_str_buf(out_fmt_tmp, sizeof(out_fmt_tmp),
+                                           out_rate, out_format,
+                                           out_channels),
+                   audio_config_to_str_buf(ao_fmt_tmp, sizeof(ao_fmt_tmp),
+                                           ao_rate, ao_format,
+                                           ao_channels));
             ao_uninit(mpctx->ao);
             mpctx->ao = NULL;
             ao_c->ao = NULL;
