@@ -30,6 +30,7 @@
 #include "common/av_common.h"
 #include "misc/bstr.h"
 #include "sd.h"
+#include "lavc_conv.h"
 
 #define HAVE_AV_WEBVTT (LIBAVCODEC_VERSION_MICRO >= 100)
 
@@ -85,6 +86,7 @@ struct lavc_conv *lavc_conv_create(struct mp_log *log, const char *codec_name,
         goto error;
     if (mp_lavc_set_extradata(avctx, extradata, extradata_len) < 0)
         goto error;
+    av_dict_set(&opts, "sub_text_format", "ass", 0);
     if (strcmp(codec_name, "eia_608") == 0)
         av_dict_set(&opts, "real_time", "1", 0);
     if (avcodec_open2(avctx, codec, &opts) < 0)
@@ -227,12 +229,14 @@ static int parse_webvtt(AVPacket *in, AVPacket *pkt)
 
 #endif
 
-// Return a NULL-terminated list of ASS event lines.
-char **lavc_conv_decode(struct lavc_conv *priv, struct demux_packet *packet)
+// Return a timed struct with NULL-terminated list of ASS event lines.
+struct decoded_subtitle lavc_conv_decode(struct lavc_conv *priv,
+                                         struct demux_packet *packet)
 {
     AVCodecContext *avctx = priv->avctx;
     AVPacket pkt;
     AVPacket parsed_pkt = {0};
+    struct decoded_subtitle sub = {0};
     int ret, got_sub;
     int num_cur = 0;
 
@@ -254,6 +258,14 @@ char **lavc_conv_decode(struct lavc_conv *priv, struct demux_packet *packet)
     if (ret < 0) {
         MP_ERR(priv, "Error decoding subtitle\n");
     } else if (got_sub) {
+        sub.pts = packet->pts + mp_pts_from_av(priv->cur.start_display_time,
+                                               &avctx->time_base);
+        sub.duration = priv->cur.end_display_time == UINT32_MAX ?
+                       UINT32_MAX :
+                       mp_pts_from_av(priv->cur.end_display_time -
+                                      priv->cur.start_display_time,
+                                      &avctx->time_base);
+
         for (int i = 0; i < priv->cur.num_rects; i++) {
             if (priv->cur.rects[i]->w > 0 && priv->cur.rects[i]->h > 0)
                 MP_WARN(priv, "Ignoring bitmap subtitle.\n");
@@ -267,7 +279,8 @@ char **lavc_conv_decode(struct lavc_conv *priv, struct demux_packet *packet)
 done:
     av_packet_unref(&parsed_pkt);
     MP_TARRAY_APPEND(priv, priv->cur_list, num_cur, NULL);
-    return priv->cur_list;
+    sub.lines = priv->cur_list;
+    return sub;
 }
 
 void lavc_conv_reset(struct lavc_conv *priv)

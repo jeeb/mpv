@@ -35,6 +35,7 @@
 #include "dec_sub.h"
 #include "ass_mp.h"
 #include "sd.h"
+#include "lavc_conv.h"
 
 struct sd_ass_priv {
     struct ass_library *ass_library;
@@ -177,8 +178,7 @@ static int init(struct sd *sd)
         ass_set_style_overrides(ctx->ass_library, opts->ass_force_style_list);
 
     ctx->ass_track = ass_new_track(ctx->ass_library);
-    if (!ctx->is_converted)
-        ctx->ass_track->track_type = TRACK_TYPE_ASS;
+    ctx->ass_track->track_type = TRACK_TYPE_ASS;
 
     ctx->shadow_track = ass_new_track(ctx->ass_library);
     ctx->shadow_track->PlayResX = 384;
@@ -234,20 +234,25 @@ static void decode(struct sd *sd, struct demux_packet *packet)
         if (!sd->opts->sub_clear_on_seek && packet->pos >= 0 &&
             check_packet_seen(sd, packet->pos))
             return;
-        if (packet->duration < 0) {
+
+        struct decoded_subtitle sub = lavc_conv_decode(ctx->converter, packet);
+        char **r = sub.lines;
+        if (packet->duration < 0 || sub.duration == UINT32_MAX) {
             if (!ctx->duration_unknown) {
                 MP_WARN(sd, "Subtitle with unknown duration.\n");
                 ctx->duration_unknown = true;
             }
-            packet->duration = UNKNOWN_DURATION;
+            sub.duration = UNKNOWN_DURATION;
         }
-        char **r = lavc_conv_decode(ctx->converter, packet);
+
         for (int n = 0; r && r[n]; n++) {
             char *ass_line = r[n];
             if (sd->opts->sub_filter_SDH)
                 ass_line = filter_SDH(sd, track->event_format, 0, ass_line, 0);
             if (ass_line)
-                ass_process_data(track, ass_line, strlen(ass_line));
+                ass_process_chunk(track, ass_line, strlen(ass_line),
+                                  llrint(sub.pts * 1000),
+                                  llrint(sub.duration * 1000));
             if (sd->opts->sub_filter_SDH)
                 talloc_free(ass_line);
         }
