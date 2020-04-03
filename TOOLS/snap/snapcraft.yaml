@@ -1,0 +1,228 @@
+name: mpv
+base: core18 # the base snap is the execution environment for this snap
+summary: free, open source media player for the command line based on MPlayer/mplayer2
+description: |
+  Supports a wide variety of media file formats, audio and video codecs, and subtitle types.
+
+adopt-info: mpv
+grade: devel # must be 'stable' to release into candidate/stable channels
+confinement: strict
+
+apps:
+  mpv:
+    desktop: share/applications/mpv.desktop
+    command: bin/mpv
+    environment:
+      LD_LIBRARY_PATH: $SNAP/usr/lib/$SNAPCRAFT_ARCH_TRIPLET/:$SNAP/usr/lib/$SNAPCRAFT_ARCH_TRIPLET/dri:$SNAP/usr/lib/$SNAPCRAFT_ARCH_TRIPLET/mesa:$SNAP/usr/lib/$SNAPCRAFT_ARCH_TRIPLET/mesa-gl:$SNAP/usr/lib/$SNAPCRAFT_ARCH_TRIPLET/xorg:$SNAP/usr/lib/$SNAPCRAFT_ARCH_TRIPLET/pulseaudio/
+      LIBGL_DRIVERS_PATH: $SNAP/usr/lib/$SNAPCRAFT_ARCH_TRIPLET/dri
+    plugs:
+      - alsa
+      - audio-playback
+      - audio-record
+      - camera
+      - desktop
+      - desktop-legacy
+      - dvb
+      - home
+      - mount-observe
+      - network
+      - network-bind
+      - opengl
+      - optical-drive
+      - pulseaudio
+      - removable-media
+      - screen-inhibit-control
+      - unity7
+      - wayland
+      - x11
+
+parts:
+  wayland-protocols:
+    plugin: nil
+    override-pull: |
+      snapcraftctl pull
+      curl -LO http://archive.ubuntu.com/ubuntu/pool/main/w/wayland-protocols/wayland-protocols_1.18-1_all.deb
+      SHASUM=$(sha256sum wayland-protocols_1.18-1_all.deb |awk '{print $1}')
+      EXPECTED_SHASUM="0b55a89c76c1d0bb70bd13ba850035b2af29a49f70c28fa7391f8f04817701fc"
+      if [ "$SHASUM" != "$EXPECTED_SHASUM" ]; then exit 1; fi
+    override-build: |
+      apt install "$SNAPCRAFT_PART_SRC/wayland-protocols_1.18-1_all.deb"
+    build-packages:
+      - curl
+  nv-codec-headers:
+    source: https://git.videolan.org/git/ffmpeg/nv-codec-headers.git
+    source-type: git
+    source-tag: n8.2.15.10
+    plugin: make
+    override-build: |
+      make install V=1 PREFIX=/ DESTDIR="$SNAPCRAFT_PART_INSTALL"
+  libdav1d:
+    source: https://code.videolan.org/videolan/dav1d.git
+    source-type: git
+    source-commit: "5a3e64f17f475dd1461c7c63d3d1b59950e26ebd"
+    plugin: meson
+    meson-parameters:
+      - --default-library=static
+      - -Denable_avx512=false
+    build-packages:
+      - build-essential
+      - nasm
+      - meson
+  libass:
+    source: https://github.com/libass/libass.git
+    source-type: git
+    source-commit: e5140624ff739c3157929bc5e1a1007cdc9cdaa8
+    plugin: autotools
+    configflags:
+      - --enable-pic
+      - --disable-shared
+      - --enable-static
+    build-packages:
+      - build-essential
+      - libfreetype6-dev
+      - libfribidi-dev
+      - libharfbuzz-dev
+      - libfontconfig1-dev
+      - libpng-dev
+  libzimg:
+    source: https://github.com/sekrit-twc/zimg.git
+    source-type: git
+    source-tag: release-2.9.3
+    plugin: autotools
+    build-packages:
+      - build-essential
+  ffmpeg:
+    after:
+      - libass
+      - libzimg
+      - libdav1d
+      - nv-codec-headers
+    source: https://git.videolan.org/git/ffmpeg.git
+    source-type: git
+    source-commit: dc67c0f1809a6b0a6cfb877f556c133d35d60c2b
+    plugin: autotools
+    configflags:
+      - --prefix=/
+      - --disable-autodetect
+      - --disable-doc
+      - --disable-stripping
+      - --disable-programs
+      - --enable-gpl
+      - --enable-gnutls
+      - --enable-zlib
+      - --enable-vaapi
+      - --enable-libx264
+      - --enable-libx265
+      - --enable-libopus
+      - --enable-libzimg
+      - --enable-libwebp
+      - --enable-libvpx
+      - --enable-libdav1d
+      - --enable-vdpau
+      - --enable-ffnvcodec
+    build-packages:
+      - build-essential
+      - nasm
+      - pkg-config
+      - libgnutls28-dev
+      - libx264-dev
+      - libx265-dev
+      - libopus-dev
+      - libva-dev
+      - libvdpau-dev
+      - libwebp-dev
+      - libvpx-dev
+  mpv:
+    after:
+      - libass
+      - ffmpeg
+      - wayland-protocols
+    source: https://github.com/mpv-player/mpv.git
+    source-type: git
+    source-commit: 516934b233882003864cffea0d78f28323a9cd68
+    plugin: waf
+    override-pull: |
+      snapcraftctl pull
+      snapcraftctl set-version "$($SNAPCRAFT_PART_SRC/version.sh)"
+    override-build: |
+      python3 ./bootstrap.py
+      python3 waf configure \
+        --prefix=/
+      python3 waf build
+      python3 waf install --destdir=$SNAPCRAFT_PART_INSTALL
+    build-packages:
+      - build-essential
+      - git
+      - libarchive-dev
+      - libasound2-dev
+      - libbluray-dev
+      - libdrm-dev
+      - libegl1-mesa-dev
+      - libgl1-mesa-dev
+      - libgbm-dev
+      - liblcms2-dev
+      - libpulse-dev
+      - libwayland-dev
+      - libx11-dev
+      - x11proto-dev
+      - libxinerama-dev
+      - libxkbcommon-dev
+      - libxrandr-dev
+      - libxss-dev
+      - libluajit-5.1-dev
+    stage-packages:
+      - libasound2
+      - libasound2-data
+      - libasyncns0
+      - libbluray2
+      - libdrm2
+      - libegl1
+      - libflac8
+      - libfontconfig1
+      - libfreetype6
+      - libfribidi0
+      - libgbm1
+      - libgl1
+      - libglvnd0
+      - libglx0
+      - libgraphite2-3
+      - libharfbuzz0b
+      - libicu60
+      - liblcms2-2
+      - libluajit-5.1-2
+      - libnuma1
+      - libogg0
+      - libopus0
+      - libpng16-16
+      - libpulse0
+      - libsndfile1
+      - libva-drm2
+      - libva-x11-2
+      - libva2
+      - libvorbis0a
+      - libvorbisenc2
+      - libvpx5
+      - libwayland-server0
+      - libwebp6
+      - libwebpmux3
+      - libx11-6
+      - libx264-152
+      - libx265-146
+      - libxau6
+      - libxcb1
+      - libxdmcp6
+      - libxext6
+      - libxfixes3
+      - libxinerama1
+      - libxml2
+      - libxrandr2
+      - libxrender1
+      - libxss1
+      - libgl1-mesa-dri
+      - libgl1-mesa-glx
+      - libgles2-mesa
+      - libva-wayland2
+      - libvdpau1
+      - libwayland-cursor0
+      - libwayland-egl1
+      - libxkbcommon0
