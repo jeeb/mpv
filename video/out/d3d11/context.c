@@ -366,7 +366,8 @@ static bool d3d11_set_fullscreen(struct ra_ctx *ctx)
 static int d3d11_control(struct ra_ctx *ctx, int *events, int request, void *arg)
 {
     struct priv *p = ctx->priv;
-    int ret = vo_w32_control(ctx->vo, events, request, arg);
+    int ret = -1;
+    bool fullscreen_switch_needed = false;
 
     switch (request) {
     case VOCTRL_VO_OPTS_CHANGED: {
@@ -378,8 +379,7 @@ static int d3d11_control(struct ra_ctx *ctx, int *events, int request, void *arg
             struct mp_vo_opts *vo_opts = p->vo_opts_cache->opts;
 
             if (changed_option == &vo_opts->fullscreen) {
-                if (!d3d11_set_fullscreen(ctx))
-                    return VO_FALSE;
+                fullscreen_switch_needed = true;
             }
         }
 
@@ -387,6 +387,25 @@ static int d3d11_control(struct ra_ctx *ctx, int *events, int request, void *arg
     }
     default:
         break;
+    }
+
+    // if leaving full screen, handle d3d11 stuff first, then general
+    // windowing
+    if (fullscreen_switch_needed && !p->vo_opts->fullscreen) {
+        if (!d3d11_set_fullscreen(ctx))
+            return VO_FALSE;
+
+        fullscreen_switch_needed = false;
+    }
+
+    ret = vo_w32_control(ctx->vo, events, request, arg);
+
+    // if entering full screen, handle d3d11 after general windowing stuff
+    if (fullscreen_switch_needed && p->vo_opts->fullscreen) {
+        if (!d3d11_set_fullscreen(ctx))
+            return VO_FALSE;
+
+        fullscreen_switch_needed = false;
     }
 
     if (*events & VO_EVENT_RESIZE) {
