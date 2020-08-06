@@ -115,6 +115,22 @@ static const struct mp_chmap default_layouts[] = {
     MP_CHMAP6(FL, FR, FC, LFE, BL, BR),         // 5.1
     MP_CHMAP7(FL, FR, FC, LFE, BC, SL, SR),     // 6.1
     MP_CHMAP8(FL, FR, FC, LFE, BL, BR, SL, SR), // 7.1
+    {0},                                        // empty
+    {0},                                        // empty
+    {0},                                        // empty
+    {0},                                        // empty
+    {0},                                        // empty
+    {0},                                        // empty
+    {0},                                        // empty
+    {0},                                        // empty
+    {0},                                        // empty
+    {0},                                        // empty
+    {0},                                        // empty
+    {0},                                        // empty
+    {0},                                        // empty
+    {0},                                        // empty
+    {0},                                        // empty
+    MP_CHMAP_INIT_22POINT2,                     // 22.2
 };
 
 // Returns true if speakers are mapped uniquely, and there's at least 1 channel.

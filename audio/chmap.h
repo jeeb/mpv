@@ -99,6 +99,7 @@ struct mp_chmap {
 
 #define MP_CHMAP_INIT_MONO {1, {MP_SPEAKER_ID_FC}}
 #define MP_CHMAP_INIT_STEREO MP_CHMAP2(FL, FR)
+#define MP_CHMAP_INIT_22POINT2 {24,{MP_SP(FL), MP_SP(FR), MP_SP(FC), MP_SP(LFE), MP_SP(BL), MP_SP(BR), MP_SP(FLC), MP_SP(FRC), MP_SP(BC), MP_SP(LFE2), MP_SP(SL), MP_SP(SR), MP_SP(TFL), MP_SP(TFR), MP_SP(TFC), MP_SP(TC), MP_SP(TBL), MP_SP(TBR), MP_SP(TSL), MP_SP(TSR), MP_SP(TBC), MP_SP(BFC), MP_SP(BFL), MP_SP(BFR)}}
 
 bool mp_chmap_is_valid(const struct mp_chmap *src);
 bool mp_chmap_is_empty(const struct mp_chmap *src);
