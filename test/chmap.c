@@ -84,6 +84,14 @@ static void run(struct test_ctx *ctx)
     mp_chmap_from_str(&b, bstr0("6.1(back)"));
     assert_int_equal(mp_chmap_diffn(&a, &b), 0);
     assert_int_equal(mp_chmap_diffn(&b, &a), 3);
+
+    mp_chmap_from_str(&a, bstr0("5.1"));
+    mp_chmap_from_str(&b, bstr0("22.2"));
+    assert_int_equal(mp_chmap_diffn(&a, &b), 0);
+    assert_int_equal(mp_chmap_diffn(&b, &a), 18);
+
+    test_sel("22.2", "22.2", LAYOUTS("fl-fr-fc-lfe-bl-br-flc-frc-bc-lfe2-sl-sr-tfl-tfr-tfc-tc-tbl-tbr-tsl-tsr-tbc-bfc-bfl-bfr"));
+    test_sel("22.2", "fl-fr-fc-lfe-bl-br-flc-frc-bc-lfe2-sl-sr-tfl-tfr-tfc-tc-tbl-tbr-tsl-tsr-tbc-bfc-bfl-bfr", LAYOUTS("22.2"));
 }
 
 const struct unittest test_chmap = {
