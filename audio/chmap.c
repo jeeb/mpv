@@ -52,6 +52,11 @@ static const char *const speaker_names[MP_SPEAKER_ID_COUNT][2] = {
     [MP_SPEAKER_ID_SDL]         = {"sdl",  "surround direct left"},
     [MP_SPEAKER_ID_SDR]         = {"sdr",  "surround direct right"},
     [MP_SPEAKER_ID_LFE2]        = {"lfe2", "low frequency 2"},
+    [MP_SPEAKER_ID_TSL]         = {"tsl",  "top side left"},
+    [MP_SPEAKER_ID_TSR]         = {"tsr",  "top side right"},
+    [MP_SPEAKER_ID_BFC]         = {"bfc",  "bottom front center"},
+    [MP_SPEAKER_ID_BFL]         = {"bfl",  "bottom front left"},
+    [MP_SPEAKER_ID_BFR]         = {"bfr",  "bottom front right"},
     [MP_SPEAKER_ID_NA]          = {"na",   "not available"},
 };
 
@@ -95,6 +100,7 @@ static const char *const std_layout_names[][2] = {
     {"7.1(wide-side)",  "fl-fr-fc-lfe-flc-frc-sl-sr"},
     {"7.1(rear)",       "fl-fr-fc-lfe-bl-br-sdl-sdr"}, // not in lavc
     {"octagonal",       "fl-fr-fc-bl-br-bc-sl-sr"},
+    {"22.2",            "fl-fr-fc-lfe-bl-br-flc-frc-bc-lfe2-sl-sr-tfl-tfr-tfc-tc-tbl-tbr-tsl-tsr-tbc-bfc-bfl-bfr"},
     {"auto",            ""}, // not in lavc
     {0}
 };
