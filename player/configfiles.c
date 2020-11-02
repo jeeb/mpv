@@ -237,44 +237,49 @@ exit:
     return res;
 }
 
-static const char *const backup_properties[] = {
-    "osd-level",
-    //"loop",
-    "speed",
-    "options/edition",
-    "pause",
-    "volume",
-    "mute",
-    "audio-delay",
-    //"balance",
-    "fullscreen",
-    "ontop",
-    "border",
-    "gamma",
-    "brightness",
-    "contrast",
-    "saturation",
-    "hue",
-    "options/deinterlace",
-    "vf",
-    "af",
-    "panscan",
-    "options/aid",
-    "options/vid",
-    "options/sid",
-    "sub-delay",
-    "sub-speed",
-    "sub-pos",
-    "sub-visibility",
-    "sub-scale",
-    "sub-use-margins",
-    "sub-ass-force-margins",
-    "sub-ass-vsfilter-aspect-compat",
-    "sub-style-override",
-    "ab-loop-a",
-    "ab-loop-b",
-    "options/video-aspect-override",
-    0
+struct backup_property {
+    const char *name;
+    bool skip_writing;
+};
+
+static const struct backup_property backup_properties[] = {
+    { "osd-level" },
+    // { "loop" },
+    { "speed" },
+    { "options/edition" },
+    { "pause" },
+    { "volume" },
+    { "mute" },
+    { "audio-delay" },
+    // { "balance" },
+    { "fullscreen" },
+    { "ontop" },
+    { "border" },
+    { "gamma" },
+    { "brightness" },
+    { "contrast" },
+    { "saturation" },
+    { "hue" },
+    { "options/deinterlace" },
+    { "vf" },
+    { "af" },
+    { "panscan" },
+    { "options/aid" },
+    { "options/vid" },
+    { "options/sid" },
+    { "sub-delay" },
+    { "sub-speed" },
+    { "sub-pos" },
+    { "sub-visibility" },
+    { "sub-scale" },
+    { "sub-use-margins" },
+    { "sub-ass-force-margins" },
+    { "sub-ass-vsfilter-aspect-compat" },
+    { "sub-style-override" },
+    { "ab-loop-a" },
+    { "ab-loop-b" },
+    { "options/video-aspect-override" },
+    { NULL }
 };
 
 // Used to retrieve default settings, which should not be stored in the
@@ -284,8 +289,8 @@ void mp_get_resume_defaults(struct MPContext *mpctx)
 {
     char **list =
         talloc_zero_array(mpctx, char*, MP_ARRAY_SIZE(backup_properties));
-    for (int i = 0; backup_properties[i]; i++) {
-        const char *pname = backup_properties[i];
+    for (int i = 0; backup_properties[i].name; i++) {
+        const char *pname = backup_properties[i].name;
         char *val = NULL;
         int r = mp_property_do(pname, M_PROPERTY_GET_STRING, &val, mpctx);
         if (r == M_PROPERTY_OK)
@@ -368,8 +373,12 @@ void mp_write_watch_later_conf(struct MPContext *mpctx)
     } else {
         fprintf(file, "start=%f\n", pos);
     }
-    for (int i = 0; backup_properties[i]; i++) {
-        const char *pname = backup_properties[i];
+    for (int i = 0; backup_properties[i].name; i++) {
+        if (backup_properties[i].skip_writing) {
+            continue;
+        }
+
+        const char *pname = backup_properties[i].name;
         char *val = NULL;
         int r = mp_property_do(pname, M_PROPERTY_GET_STRING, &val, mpctx);
         if (r == M_PROPERTY_OK) {
