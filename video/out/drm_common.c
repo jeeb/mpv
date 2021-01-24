@@ -74,7 +74,10 @@ const struct m_sub_options drm_conf = {
     .opts = (const struct m_option[]) {
         {"drm-device", OPT_STRING(drm_device_path), .flags = M_OPT_FILE},
         {"drm-connector", OPT_STRING_VALIDATE(drm_connector_spec,
-                                               drm_validate_connector_opt)},
+                                              drm_validate_connector_opt),
+         .deprecation_message = "the drm card number support will be removed "
+                                "in favour of specifying a specific device "
+                                "via drm-device"},
         {"drm-mode", OPT_STRING_VALIDATE(drm_mode_spec,
                                           drm_validate_mode_opt)},
         {"drm-atomic", OPT_CHOICE(drm_atomic, {"no", 0}, {"auto", 1})},
