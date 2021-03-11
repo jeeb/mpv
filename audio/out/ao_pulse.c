@@ -710,20 +710,24 @@ static int control(struct ao *ao, enum aocontrol cmd, void *arg)
                 volume.values[0] = VOL_MP2PA(vol->left);
                 volume.values[1] = VOL_MP2PA(vol->right);
             }
-            if (!waitop(priv, pa_context_set_sink_input_volume(priv->context,
-                                                               stream_index,
-                                                               &volume,
-                                                               context_success_cb, ao)) ||
+            if (!waitop(priv,
+                        pa_context_set_sink_input_volume(priv->context,
+                                                         stream_index,
+                                                         &volume,
+                                                         context_success_cb,
+                                                         ao)) ||
                 !priv->retval) {
                 GENERIC_ERR_MSG("pa_context_set_sink_input_volume() failed");
                 return CONTROL_ERROR;
             }
         } else if (cmd == AOCONTROL_SET_MUTE) {
             const bool *mute = arg;
-            if (!waitop(priv, pa_context_set_sink_input_mute(priv->context,
-                                                             stream_index,
-                                                             *mute,
-                                                             context_success_cb, ao)) ||
+            if (!waitop(priv,
+                        pa_context_set_sink_input_mute(priv->context,
+                                                       stream_index,
+                                                       *mute,
+                                                       context_success_cb,
+                                                       ao)) ||
                 !priv->retval) {
                 GENERIC_ERR_MSG("pa_context_set_sink_input_mute() failed");
                 return CONTROL_ERROR;
