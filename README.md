@@ -101,6 +101,18 @@ Example:
     ./waf
     ./waf install
 
+NOTE: mpv now supports the [meson](https://mesonbuild.com/index.html) build
+system which may phase out the waf build in the future. For a list of all
+the build options, you can use `meson configure`. Logs are stored in
+`meson-logs` within your build directory. Some documentation about the
+differences are located in [build-system-differences][build-system-differences].
+
+Example (meson):
+
+    meson build
+    meson compile -C build
+    meson install -C build
+
 Essential dependencies (incomplete list):
 
 - gcc or clang
@@ -214,3 +226,4 @@ Most activity happens on the IRC channel and the github issue tracker.
 [api-changes]: https://github.com/mpv-player/mpv/blob/master/DOCS/client-api-changes.rst
 [restore-old-bindings]: https://github.com/mpv-player/mpv/blob/master/etc/restore-old-bindings.conf
 [contribute.md]: https://github.com/mpv-player/mpv/blob/master/DOCS/contribute.md
+[build-system-differences]: https://github.com/mpv-player/mpv/blob/master/DOCS/build-system-differences.md

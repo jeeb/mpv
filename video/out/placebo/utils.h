@@ -1,5 +1,8 @@
 #pragma once
 
+// Hack for meson subproject libplacebo build.
+#define PL_DEPRECATED __attribute__((deprecated))
+
 #include "common/common.h"
 #include "common/msg.h"
 
