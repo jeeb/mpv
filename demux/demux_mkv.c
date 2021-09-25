@@ -2479,6 +2479,9 @@ static void mkv_parse_and_add_packet(demuxer_t *demuxer, mkv_track_t *track,
     int64_t dts = dp->dts == MP_NOPTS_VALUE ? AV_NOPTS_VALUE : dp->dts * tb;
     bool copy_sidedata = true;
 
+    MP_DBG(demuxer, "%s: dp->pts: %f, pts sent to parser: %"PRId64"\n", __func__,
+           dp->pts, pts);
+
     while (dp->len) {
         uint8_t *data = NULL;
         int size = 0;
@@ -2504,6 +2507,9 @@ static void mkv_parse_and_add_packet(demuxer_t *demuxer, mkv_track_t *track,
                 new->dts = track->av_parser->dts == AV_NOPTS_VALUE
                          ? MP_NOPTS_VALUE : track->av_parser->dts / tb;
             }
+
+            MP_DBG(demuxer, "%s: parser->pts: %"PRId64", new->pts: %f\n", __func__,
+                   track->av_parser->pts, new->pts);
             add_packet(demuxer, stream, new);
         }
         pts = dts = AV_NOPTS_VALUE;
