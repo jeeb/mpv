@@ -6,6 +6,7 @@ on:
       - master
       - ci
       - 'release/**'
+      - pr8840
   pull_request:
     branches: [master]
 
