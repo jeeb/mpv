@@ -154,9 +154,30 @@ if [ ! -e "$prefix_dir/lib/libluajit-5.1.a" ]; then
 fi
 
 ## mpv
-PKG_CONFIG=pkg-config CFLAGS="-I'$prefix_dir/include'" LDFLAGS="-L'$prefix_dir/lib'" \
-python3 ./waf configure \
-    --enable-libmpv-shared --lua=luajit \
-    --enable-{shaderc,spirv-cross,d3d11}
+mkdir -p "${TARGET}_mingw_build" && pushd "${TARGET}_mingw_build"
 
-python3 ./waf build --verbose
+CPU="x86_64"
+[[ "$TARGET" == "i686-"* ]] && CPU="i686"
+
+cat > mingw64_crossfile << EOF
+[binaries]
+c = '${CC}'
+cpp = '${CXX}'
+ar = '${AR}'
+strip = '${TARGET}-strip'
+pkgconfig = 'pkg-config'
+exe_wrapper = 'wine64' # A command used to run generated executables.
+windres = '${TARGET}-windres'
+
+[host_machine]
+system = 'windows'
+cpu_family = '${CPU}'
+cpu = '${CPU}'
+endian = 'little'
+EOF
+
+CFLAGS="-I'$prefix_dir/include'" LDFLAGS="-L'$prefix_dir/lib'" \
+meson .. --cross-file mingw64_crossfile --libdir lib
+ninja
+
+popd
