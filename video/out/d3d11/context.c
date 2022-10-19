@@ -207,6 +207,35 @@ static int d3d11_color_depth(struct ra_swapchain *sw)
     return ra_fmt->component_depth[0];
 }
 
+static bool d3d11_color_space_hint(struct ra_swapchain *sw,
+                                   const struct mp_image *csp_hint_frame,
+                                   struct mp_colorspace *configured_csp)
+{
+    struct priv *p = sw->priv;
+
+    MP_VERBOSE(sw->ctx, "%s: %s/%s -> %s/%s\n",
+               __func__,
+               csp_hint_frame ?
+               m_opt_choice_str(mp_csp_prim_names,
+                                csp_hint_frame->params.color.primaries) :
+               "<no input>",
+               csp_hint_frame ?
+               m_opt_choice_str(mp_csp_trc_names,
+                                csp_hint_frame->params.color.gamma) :
+               "<no input>",
+               m_opt_choice_str(mp_csp_prim_names,
+                                p->swapchain_csp.primaries),
+               m_opt_choice_str(mp_csp_trc_names,
+                                p->swapchain_csp.gamma));
+
+    if (!configured_csp)
+        return true;
+
+    *configured_csp = p->swapchain_csp;
+
+    return true;
+}
+
 static bool d3d11_start_frame(struct ra_swapchain *sw, struct ra_fbo *out_fbo)
 {
     struct priv *p = sw->priv;
@@ -465,11 +494,12 @@ static void d3d11_uninit(struct ra_ctx *ctx)
 }
 
 static const struct ra_swapchain_fns d3d11_swapchain = {
-    .color_depth  = d3d11_color_depth,
-    .start_frame  = d3d11_start_frame,
-    .submit_frame = d3d11_submit_frame,
-    .swap_buffers = d3d11_swap_buffers,
-    .get_vsync    = d3d11_get_vsync,
+    .color_depth     = d3d11_color_depth,
+    .colorspace_hint = d3d11_color_space_hint,
+    .start_frame     = d3d11_start_frame,
+    .submit_frame    = d3d11_submit_frame,
+    .swap_buffers    = d3d11_swap_buffers,
+    .get_vsync       = d3d11_get_vsync,
 };
 
 static bool d3d11_init(struct ra_ctx *ctx)
