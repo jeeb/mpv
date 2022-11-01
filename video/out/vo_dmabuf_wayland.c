@@ -79,28 +79,35 @@ static bool vaapi_dmabuf_importer(struct mp_image *src, struct wlbuf_pool_entry*
     int layer_no = 0;
     VAStatus status = vaExportSurfaceHandle(p->display, entry->key, VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME_2,
                                             VA_EXPORT_SURFACE_COMPOSED_LAYERS | VA_EXPORT_SURFACE_READ_ONLY, &desc);
+    if (!CHECK_VA_STATUS(entry->vo, "vaExportSurfaceHandle()")) {
+        if (status == VA_STATUS_ERROR_INVALID_SURFACE)
+            MP_VERBOSE(entry->vo, "vaExportSurfaceHandle: composed layers not supported.\n");
 
-    if (status == VA_STATUS_ERROR_INVALID_SURFACE)
-        MP_VERBOSE(entry->vo, "vaExportSurfaceHandle: composed layers not supported.\n");
-    if (CHECK_VA_STATUS(entry->vo, "vaExportSurfaceHandle()")) {
-        uint32_t drm_format = desc.layers[layer_no].drm_format;
-
-        if (!vo_wayland_supported_format(entry->vo, drm_format, desc.objects[0].drm_format_modifier)) {
-            MP_VERBOSE(entry->vo, "%s(%016lx) is not supported.\n",
-                       mp_tag_str(drm_format), desc.objects[0].drm_format_modifier);
-        } else {
-            entry->drm_format = drm_format;
-            for (int plane_no = 0; plane_no < desc.layers[layer_no].num_planes; ++plane_no) {
-                int object = desc.layers[layer_no].object_index[plane_no];
-                uint64_t modifier = desc.objects[object].drm_format_modifier;
-                zwp_linux_buffer_params_v1_add(params, desc.objects[object].fd, plane_no, desc.layers[layer_no].offset[plane_no],
-                                               desc.layers[layer_no].pitch[plane_no], modifier >> 32, modifier & 0xffffffff);
-            }
-            dmabuf_imported = true;
-        }
-        for (int i = 0; i < desc.num_objects; i++)
-            close(desc.objects[i].fd);
+        return false;
     }
+
+    uint32_t drm_format = desc.layers[layer_no].drm_format;
+
+    if (!vo_wayland_supported_format(entry->vo, drm_format, desc.objects[0].drm_format_modifier)) {
+        MP_VERBOSE(entry->vo, "%s(%016lx) is not supported.\n",
+                   mp_tag_str(drm_format), desc.objects[0].drm_format_modifier);
+        goto cleanup;
+    }
+
+    entry->drm_format = drm_format;
+
+    for (int plane_no = 0; plane_no < desc.layers[layer_no].num_planes; plane_no++) {
+        int object = desc.layers[layer_no].object_index[plane_no];
+        uint64_t modifier = desc.objects[object].drm_format_modifier;
+        zwp_linux_buffer_params_v1_add(params, desc.objects[object].fd, plane_no, desc.layers[layer_no].offset[plane_no],
+                                       desc.layers[layer_no].pitch[plane_no], modifier >> 32, modifier & 0xffffffff);
+    }
+
+    dmabuf_imported = true;
+
+cleanup:
+    for (int i = 0; i < desc.num_objects; i++)
+        close(desc.objects[i].fd);
 
     return dmabuf_imported;
 }
