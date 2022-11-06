@@ -68,11 +68,17 @@ enum mp_speaker_id {
     MP_SPEAKER_ID_COUNT,
 };
 
+enum mp_chmap_type {
+    MP_CHMAP_TYPE_CLASSIC = 0,
+    MP_CHMAP_TYPE_AMBISONICS,
+};
+
 struct mp_chmap {
     uint8_t num; // number of channels
     // Given a channel n, speaker[n] is the speaker ID driven by that channel.
     // Entries after speaker[num - 1] are undefined.
     uint8_t speaker[MP_NUM_CHANNELS];
+    enum mp_chmap_type type;
 };
 
 typedef const char * const (mp_ch_layout_tuple)[2];

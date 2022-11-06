@@ -31,6 +31,13 @@ bool mp_chmap_from_av_layout(struct mp_chmap *dst, const AVChannelLayout *src)
     case AV_CHANNEL_ORDER_NATIVE:
         mp_chmap_from_lavc(dst, src->u.mask);
         return dst->num == src->nb_channels;
+    case AV_CHANNEL_ORDER_AMBISONIC:
+        *dst = (struct mp_chmap){
+            .type = MP_CHMAP_TYPE_AMBISONICS,
+        };
+        mp_chmap_from_lavc(dst, src->u.mask);
+        dst->num = src->nb_channels;
+        return true;
     default:
         // TODO: handle custom layouts
         return false;
@@ -39,13 +46,24 @@ bool mp_chmap_from_av_layout(struct mp_chmap *dst, const AVChannelLayout *src)
 
 void mp_chmap_to_av_layout(AVChannelLayout *dst, const struct mp_chmap *src)
 {
-    *dst = (AVChannelLayout){
-        .order = AV_CHANNEL_ORDER_UNSPEC,
-        .nb_channels = src->num,
-    };
-
-    // TODO: handle custom layouts
-    if (!mp_chmap_is_unknown(src)) {
+    switch (src->type) {
+    case MP_CHMAP_TYPE_AMBISONICS:
         av_channel_layout_from_mask(dst, mp_chmap_to_lavc(src));
+        dst->order = AV_CHANNEL_ORDER_AMBISONIC;
+        dst->nb_channels = src->num;
+        return;
+    case MP_CHMAP_TYPE_CLASSIC:
+    default:
+        *dst = (AVChannelLayout){
+            .order = AV_CHANNEL_ORDER_UNSPEC,
+            .nb_channels = src->num,
+        };
+
+        // TODO: handle custom layouts
+        if (!mp_chmap_is_unknown(src)) {
+            av_channel_layout_from_mask(dst, mp_chmap_to_lavc(src));
+        }
+        return;
     }
+
 }

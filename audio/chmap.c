@@ -117,7 +117,8 @@ bool mp_chmap_is_valid(const struct mp_chmap *src)
     bool mapped[MP_SPEAKER_ID_COUNT] = {0};
     for (int n = 0; n < src->num; n++) {
         int sp = src->speaker[n];
-        if (sp >= MP_SPEAKER_ID_COUNT || mapped[sp])
+        if (sp >= MP_SPEAKER_ID_COUNT ||
+            (src->type == MP_CHMAP_TYPE_CLASSIC && mapped[sp]))
             return false;
         if (sp != MP_SPEAKER_ID_NA)
             mapped[sp] = true;
